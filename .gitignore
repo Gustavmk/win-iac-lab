@@ -16,3 +16,6 @@ ansible/.vault_pass
 
 # Packer
 packer/vars.json
+
+*tfplan*
+.fake

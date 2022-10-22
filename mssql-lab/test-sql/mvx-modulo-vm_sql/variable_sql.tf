@@ -1,6 +1,6 @@
 variable "sql_license_type" {
   description = "(Optional) The SQL Server license type. Possible values are AHUB (Azure Hybrid Benefit), DR (Disaster Recovery), and PAYG (Pay-As-You-Go). Changing this forces a new resource to be created."
-  default     = "AHUB"
+  default     = "PAYG"
   type        = string
 }
 

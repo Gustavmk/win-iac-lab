@@ -16,7 +16,7 @@ variable "disk_size" {
 }
 
 variable "sku_publisher" {
-  default = "MicrosoftWindowsServer"
+  default = "MicrosoftSQLServer"
 }
 
 variable "sku_offer" {
