@@ -63,7 +63,6 @@ module "vm_sqlserver" {
   vnet_name   = azurerm_virtual_network.net.name
   vnet_rg     = azurerm_resource_group.sql.name
 
-  #enable_join_ad = true
 
   sku_name    = "sqldev" // enterprise, standard, sqldev, web
   sku_offer   = "sql2016sp3-ws2019"
@@ -72,11 +71,5 @@ module "vm_sqlserver" {
   tags = var.tags
 
   enable_sql_automate_patching = true
-
-
-
-  depends_on = [
-    azurerm_subnet.net
-  ]
 
 }

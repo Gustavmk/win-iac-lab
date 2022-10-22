@@ -12,6 +12,11 @@ variable "enable_sql_automate_backup" {
   default     = null
 }
 
+variable "enable_sql_automate_backup_manual" {
+  description = "Define own backup schedule"
+  default     = null
+}
+
 variable "enable_sql_automate_patching" {
   description = " (Optional) An auto_patching block as defined below."
   default     = false
@@ -27,8 +32,12 @@ locals {
       maintenanceWindowStartingHour = "5"
     }
 
-    sqlBackupConfig = {
-
+    sqlBackupConfigManualSchedule = {
+      manualEnabled                   = var.enable_sql_automate_backup_manual
+      full_backup_frequency           = "Weekly"
+      full_backup_start_hour          = "23"
+      full_backup_window_in_hours     = "7"
+      log_backup_frequency_in_minutes = "15"
     }
 
   }
@@ -49,16 +58,19 @@ locals {
     storage_workload_type = ""
 
     data_storage = {
-      default_file_path = ""
+      default_file_path = "f:\\data"
       luns              = ""
     }
 
     log_storage = {
+      default_file_path = "g:\\logs"
+      luns              = ""
 
     }
 
     temp_db_storage = {
-
+      default_file_path = "D:\\SQLTemp"
+      luns              = [] // If you use an empty list ([]), it will pass through the validation and the tempdb will be created inside the temporary disk as desired.
     }
   }
 }
