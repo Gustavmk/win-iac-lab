@@ -43,14 +43,12 @@ locals {
   }
 }
 
-
 locals {
   disk_config = {
     dataDisk_count = ""
     logDisk_count  = ""
   }
 }
-
 
 locals {
   SqlStorageConfig = {
