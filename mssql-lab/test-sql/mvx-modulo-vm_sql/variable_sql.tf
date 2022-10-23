@@ -1,3 +1,9 @@
+variable "sql_login_username" {
+}
+
+variable "sql_login_password" {
+}
+
 variable "sql_license_type" {
   description = "(Optional) The SQL Server license type. Possible values are AHUB (Azure Hybrid Benefit), DR (Disaster Recovery), and PAYG (Pay-As-You-Go). Changing this forces a new resource to be created."
   default     = "PAYG"
@@ -12,28 +18,33 @@ variable "enable_sql_automate_backup" {
   default     = null
 }
 
-variable "enable_sql_automate_backup_manual" {
+variable "enable_sql_auto_backup" {
+  default = false
+  type    = bool
+}
+
+variable "enable_sql_auto_backup_manual" {
   description = "Define own backup schedule"
-  default     = null
+  default     = false
+  type        = bool
 }
 
 variable "enable_sql_automate_patching" {
   description = " (Optional) An auto_patching block as defined below."
   default     = false
+  type        = bool
 }
 
 locals {
   SqlServerConfig = {
 
-    sqlpatchingConfig = {
-      patchingEnabled               = var.enable_sql_automate_patching
-      dayOfWeek                     = "Tuesday"
-      maintenanceWindowDuration     = "120"
-      maintenanceWindowStartingHour = "5"
+    sqlPatchingConfig = {
+      day_of_week                            = "Tuesday"
+      maintenance_window_duration_in_minutes = "120"
+      maintenance_window_starting_hour       = "5"
     }
 
     sqlBackupConfigManualSchedule = {
-      manualEnabled                   = var.enable_sql_automate_backup_manual
       full_backup_frequency           = "Weekly"
       full_backup_start_hour          = "23"
       full_backup_window_in_hours     = "7"
@@ -43,26 +54,34 @@ locals {
   }
 }
 
-locals {
-  disk_config = {
-    dataDisk_count = ""
-    logDisk_count  = ""
-  }
+variable "disks_data_count" {
+  default = "1"
+}
+
+variable "disks_log_count" {
+  default = "1"
+}
+
+variable "sql_disk_type" {
+  default = "NEW"
+  type    = string
+}
+variable "sql_storage_workload_type" {
+  default = "GENERAL"
+  type    = string
 }
 
 locals {
   SqlStorageConfig = {
-    disk_type             = ""
-    storage_workload_type = ""
 
     data_storage = {
       default_file_path = "f:\\data"
-      luns              = ""
+      count             = var.disks_data_count
     }
 
     log_storage = {
       default_file_path = "g:\\logs"
-      luns              = ""
+      count             = var.disks_log_count
 
     }
 

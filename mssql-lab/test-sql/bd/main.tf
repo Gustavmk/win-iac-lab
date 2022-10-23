@@ -52,7 +52,7 @@ resource "azurerm_subnet" "net" {
 
 module "vm_sqlserver" {
   source              = "../mvx-modulo-vm_sql"
-  vm_name             = "VMSQL1"
+  vm_name             = "VMSQL2"
   resource_group_name = azurerm_resource_group.sql.name
   size_name           = "Standard_B2ms"
   vm_adm_user         = "sqladmin"
@@ -68,8 +68,9 @@ module "vm_sqlserver" {
   sku_offer   = "sql2016sp3-ws2019"
   sku_version = "13.2.220913"
 
-  tags = var.tags
+  sql_login_username = "Password1234!"
+  sql_login_password = "sqllogin"
 
-  enable_sql_automate_patching = true
+  tags = var.tags
 
 }

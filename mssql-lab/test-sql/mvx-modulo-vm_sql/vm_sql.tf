@@ -6,10 +6,9 @@ resource "azurerm_mssql_virtual_machine" "main" {
   sql_connectivity_port = 1433
   sql_connectivity_type = "PRIVATE"
 
-  sql_connectivity_update_password = "Password1234!"
-  sql_connectivity_update_username = "sqllogin"
-
-
+  sql_connectivity_update_username = var.sql_login_username
+  sql_connectivity_update_password = var.sql_login_password
+  
   // TODO CRIAR AS VARIABLLES
   /*
   key_vault_credential {
@@ -20,52 +19,57 @@ resource "azurerm_mssql_virtual_machine" "main" {
   }
   */
 
-  // TODO CRIAR AS VARIABLLES
   storage_configuration {
-    disk_type             = var.sql_storage_sqldisktype
-    storage_workload_type = var.sql_storage_workloadtype
+
+    disk_type             = var.sql_disk_type
+    storage_workload_type = var.sql_storage_workload_type
+
     data_settings {
       default_file_path = local.SqlStorageConfig.data_storage.default_file_path
-      luns              = (local.datadisk_count == "1") ? [1] : range(1, local.datadisk_count + 1)
+      luns              = (local.SqlStorageConfig.data_storage.count == "1") ? [1] : range(10, (local.SqlStorageConfig.data_storage.count + 1))
     }
+
     log_settings {
       default_file_path = local.SqlStorageConfig.log_storage.default_file_path
-      luns              = (local.logdisk_count == "1") ? [10] : range(10, (local.logdisk_count + 10))
+      luns              = (local.SqlStorageConfig.log_storage.count == "1") ? [10] : range(10, (local.SqlStorageConfig.log_storage.count + 1))
     }
+
     temp_db_settings {
       default_file_path = local.SqlStorageConfig.temp_db_storage.default_file_path
       luns              = local.SqlStorageConfig.temp_db_storage.luns
     }
+
   }
 
-  // TODO CRIAR AS VARIABLLES
-  auto_backup {
-    encryption_enabled = false
 
-    #encryption_password = null
-    retention_period_in_days        = 15
-    storage_blob_endpoint           = ""
-    storage_account_access_key      = ""
-    system_databases_backup_enabled = true
+  dynamic "auto_backup" {
+    for_each = var.enable_sql_auto_backup == false ? [] : [1]
+    content {
+      encryption_enabled = false
+      #encryption_password = null
+      retention_period_in_days        = 15
+      storage_blob_endpoint           = ""
+      storage_account_access_key      = ""
+      system_databases_backup_enabled = true
 
-    dynamic "manual_schedule" {
-      for_each = local.SqlServerConfig.sqlBackupConfigManualSchedule.manualEnabled == false ? [] : list(local.SqlServerConfig.sqlBackupConfigManualSchedule)
-      content {
-        full_backup_frequency           = manual_schedule.value.full_backup_frequency
-        full_backup_start_hour          = manual_schedule.value.full_backup_start_hour
-        full_backup_window_in_hours     = manual_schedule.value.full_backup_window_in_hours
-        log_backup_frequency_in_minutes = manual_schedule.value.log_backup_frequency_in_minutes
+      dynamic "manual_schedule" {
+        for_each = var.enable_sql_auto_backup_manual == false ? [] : tolist(local.SqlServerConfig.sqlBackupConfigManualSchedule)
+        content {
+          full_backup_frequency           = manual_schedule.value.full_backup_frequency
+          full_backup_start_hour          = manual_schedule.value.full_backup_start_hour
+          full_backup_window_in_hours     = manual_schedule.value.full_backup_window_in_hours
+          log_backup_frequency_in_minutes = manual_schedule.value.log_backup_frequency_in_minutes
+        }
       }
     }
-
   }
 
   dynamic "auto_patching" {
-    for_each = local.SqlServerConfig.sqlpatchingConfig.patchingEnabled == false ? [] : list(local.SqlServerConfig.sqlpatchingConfig)
+    for_each = var.enable_sql_automate_patching == false ? [] : tomap([local.SqlServerConfig.sqlPatchingConfig])
     content {
-      day_of_week                            = auto_patching.value.dayOfWeek
-      maintenance_window_duration_in_minutes = auto_patching.value.maintenanceWindowDuration
-      maintenance_window_starting_hour       = auto_patching.value.maintenanceWindowStartingHour
+      day_of_week                            = auto_patching.value.day_of_week
+      maintenance_window_duration_in_minutes = auto_patching.value.maintenance_window_duration_in_minutes
+      maintenance_window_starting_hour       = auto_patching.value.maintenance_window_starting_hour
     }
   }
 
