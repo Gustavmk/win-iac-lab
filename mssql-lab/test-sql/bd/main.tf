@@ -57,7 +57,7 @@ module "vm_sqlserver" {
   size_name           = "Standard_B2ms"
   vm_adm_user         = "sqladmin"
   vm_adm_password     = "Smegma2319_3231#$#!Gold@12"
-
+  enable_public_ip    = true
 
   vnet_subnet = azurerm_subnet.net.name
   vnet_name   = azurerm_virtual_network.net.name
@@ -68,10 +68,14 @@ module "vm_sqlserver" {
   sku_offer   = "sql2016sp3-ws2019"
   sku_version = "13.2.220913"
 
-  sql_login_username = "Password1234!"
-  sql_login_password = "sqllogin"
+  sql_login_username = "sqllogin"
+  sql_login_password = "Password1234!"
 
   tags = var.tags
+
+  depends_on = [
+    azurerm_subnet.net
+  ]
 
 }
 

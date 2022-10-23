@@ -1,0 +1,107 @@
+resource "azurerm_windows_virtual_machine" "vm" {
+  count                    = length(var.instances)
+  name                     = upper(element(var.instances, count.index))
+  location                 = azurerm_resource_group.resourcegroup[count.index].location
+  resource_group_name      = azurerm_resource_group.resourcegroup[count.index].name
+  network_interface_ids    = [azurerm_network_interface.nic[count.index].id]
+  size                     = var.instancesize
+  zone                     = var.instancezone
+  admin_username           = var.vmadmin
+  admin_password           = data.azurerm_key_vault_secret.vmadminpwd.value
+  enable_automatic_updates = "false"
+  patch_mode               = "Manual"
+  provision_vm_agent       = "true"
+  tags                     = var.tags
+
+  source_image_reference {
+    publisher = "MicrosoftSQLServer"
+    offer     = "sql2019-ws2019"
+    sku       = "enterprise"
+    version   = "latest"
+  }
+
+  os_disk {
+    name                 = "${element(var.instances, count.index)}-osdisk"
+    caching              = "ReadWrite"
+    storage_account_type = "StandardSSD_LRS"
+    disk_size_gb         = 250
+  }
+}
+
+# add a data disk - we were going to iterate through a collection, but this is easier for now
+resource "azurerm_managed_disk" "datadisk" {
+  count                = length(var.instances)
+  name                 = "${azurerm_windows_virtual_machine.vm[count.index].name}-data-disk01"
+  location             = azurerm_resource_group.resourcegroup[count.index].location
+  resource_group_name  = azurerm_resource_group.resourcegroup[count.index].name
+  storage_account_type = "Premium_LRS"
+  zones                = [var.instancezone]
+  create_option        = "Empty"
+  disk_size_gb         = 1000
+  tags                 = var.tags
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "datadisk_attach" {
+  count              = length(var.instances)
+  managed_disk_id    = azurerm_managed_disk.datadisk[count.index].id
+  virtual_machine_id = azurerm_windows_virtual_machine.vm[count.index].id
+  lun                = 1
+  caching            = "ReadWrite"
+}
+
+# add a log disk - we were going to iterate through a collection, but this is easier for now
+resource "azurerm_managed_disk" "logdisk" {
+  count                = length(var.instances)
+  name                 = "${azurerm_windows_virtual_machine.vm[count.index].name}-log-disk01"
+  location             = azurerm_resource_group.resourcegroup[count.index].location
+  resource_group_name  = azurerm_resource_group.resourcegroup[count.index].name
+  storage_account_type = "Premium_LRS"
+  zones                = [var.instancezone]
+  create_option        = "Empty"
+  disk_size_gb         = 500
+  tags                 = var.tags
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "logdisk_attach" {
+  count              = length(var.instances)
+  managed_disk_id    = azurerm_managed_disk.logdisk[count.index].id
+  virtual_machine_id = azurerm_windows_virtual_machine.vm[count.index].id
+  lun                = 2
+  caching            = "ReadWrite"
+}
+
+# configure the SQL side of the deployment
+resource "azurerm_mssql_virtual_machine" "sqlvm" {
+  count                            = length(var.instances)
+  virtual_machine_id               = azurerm_windows_virtual_machine.vm[count.index].id
+  sql_license_type                 = "PAYG"
+  r_services_enabled               = true
+  sql_connectivity_port            = 1433
+  sql_connectivity_type            = "PRIVATE"
+  sql_connectivity_update_username = var.sqladmin
+  sql_connectivity_update_password = data.azurerm_key_vault_secret.sqladminpwd.value
+
+  #The storage_configuration block supports the following:
+  storage_configuration {
+    disk_type             = "NEW"  # (Required) The type of disk configuration to apply to the SQL Server. Valid values include NEW, EXTEND, or ADD.
+    storage_workload_type = "OLTP" # (Required) The type of storage workload. Valid values include GENERAL, OLTP, or DW.
+
+    # The storage_settings block supports the following:
+    data_settings {
+      default_file_path = var.sqldatafilepath # (Required) The SQL Server default path
+      luns              = [azurerm_virtual_machine_data_disk_attachment.datadisk_attach[count.index].lun]
+    }
+
+    log_settings {
+      default_file_path = var.sqllogfilepath                                                             # (Required) The SQL Server default path
+      luns              = [azurerm_virtual_machine_data_disk_attachment.logdisk_attach[count.index].lun] # (Required) A list of Logical Unit Numbers for the disks.
+    }
+
+    #        temp_db_settings {
+    #            default_file_path = var.sqltempdbfilepath   #- (Required) The SQL Server default path
+    #            luns = [3] #- (Required) A list of Logical Unit Numbers for the disks.
+    #        }
+
+  }
+
+}

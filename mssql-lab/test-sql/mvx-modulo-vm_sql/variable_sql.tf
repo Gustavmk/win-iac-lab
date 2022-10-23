@@ -4,6 +4,14 @@ variable "sql_login_username" {
 variable "sql_login_password" {
 }
 
+variable "sql_connectivity_port" {
+  default = 1433
+  type    = number
+}
+variable "sql_connectivity_type" {
+  type    = string
+  default = "PRIVATE" // 
+}
 variable "sql_license_type" {
   description = "(Optional) The SQL Server license type. Possible values are AHUB (Azure Hybrid Benefit), DR (Disaster Recovery), and PAYG (Pay-As-You-Go). Changing this forces a new resource to be created."
   default     = "PAYG"
@@ -13,14 +21,16 @@ variable "sql_license_type" {
 variable "r_services_enabled" {
   default = false
 }
-variable "enable_sql_automate_backup" {
-  description = "(Optional) An auto_backup block as defined below. This block can be added to an existing resource, but removing this block forces a new resource to be created."
-  default     = null
+
+variable "enable_sql_key_vault_integration" {
+  default = false
+  type    = bool
 }
 
 variable "enable_sql_auto_backup" {
-  default = false
-  type    = bool
+  description = "(Optional) An auto_backup block as defined below. This block can be added to an existing resource, but removing this block forces a new resource to be created."
+  default     = false
+  type        = bool
 }
 
 variable "enable_sql_auto_backup_manual" {

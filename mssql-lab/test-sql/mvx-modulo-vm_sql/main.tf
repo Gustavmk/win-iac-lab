@@ -14,6 +14,17 @@ data "azurerm_subnet" "main" {
   resource_group_name  = var.vnet_rg
 }
 
+resource "azurerm_public_ip" "main" {
+  #count = var.enable_public_ip == false ? 0 : 1
+
+  name                = "pip-${var.vm_name}"
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = data.azurerm_resource_group.main.location
+  allocation_method   = "Static"
+
+  tags = var.tags
+}
+
 resource "azurerm_network_interface" "main" {
   name                = "nic-${var.vm_name}"
   location            = data.azurerm_resource_group.main.location
@@ -23,6 +34,7 @@ resource "azurerm_network_interface" "main" {
     name                          = "internal"
     subnet_id                     = data.azurerm_subnet.main.id
     private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.main.id
   }
 }
 
@@ -82,6 +94,13 @@ resource "azurerm_managed_disk" "data" {
   tags = var.tags
 }
 
+resource "azurerm_virtual_machine_data_disk_attachment" "data" {
+  managed_disk_id    = azurerm_managed_disk.data.id
+  virtual_machine_id = azurerm_windows_virtual_machine.main.id
+  lun                = 1
+  caching            = "ReadWrite"
+}
+
 resource "azurerm_managed_disk" "log" {
   name                 = "DISK_${var.vm_name}_LOG_1"
   location             = data.azurerm_resource_group.main.location
@@ -93,16 +112,9 @@ resource "azurerm_managed_disk" "log" {
   tags = var.tags
 }
 
-resource "azurerm_virtual_machine_data_disk_attachment" "data" {
-  managed_disk_id    = azurerm_managed_disk.data.id
-  virtual_machine_id = azurerm_windows_virtual_machine.main.id
-  lun                = "1"
-  caching            = "ReadWrite"
-}
-
 resource "azurerm_virtual_machine_data_disk_attachment" "log" {
   managed_disk_id    = azurerm_managed_disk.log.id
   virtual_machine_id = azurerm_windows_virtual_machine.main.id
-  lun                = "2"
+  lun                = 2
   caching            = "ReadWrite"
 }

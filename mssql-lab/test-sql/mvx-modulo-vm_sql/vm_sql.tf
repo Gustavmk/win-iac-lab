@@ -3,13 +3,21 @@ resource "azurerm_mssql_virtual_machine" "main" {
   virtual_machine_id    = azurerm_windows_virtual_machine.main.id
   sql_license_type      = var.sql_license_type
   r_services_enabled    = var.r_services_enabled
-  sql_connectivity_port = 1433
-  sql_connectivity_type = "PRIVATE"
+  sql_connectivity_port = var.sql_connectivity_port
+  sql_connectivity_type = var.sql_connectivity_type
 
   sql_connectivity_update_username = var.sql_login_username
   sql_connectivity_update_password = var.sql_login_password
-  
-  // TODO CRIAR AS VARIABLLES
+
+  dynamic "key_vault_credential" {
+    for_each = var.enable_sql_key_vault_integration == false ? [] : [1]
+    content {
+      name                     = key_vault_credential.value.name
+      key_vault_url            = key_vault_credential.value.vault_uri
+      service_principal_name   = key_vault_credential.value.service_principal_name
+      service_principal_secret = key_vault_credential.value.service_principal_secret
+    }
+  }
   /*
   key_vault_credential {
     name                     = "${var.vm_name}-AKVCred"
@@ -26,12 +34,14 @@ resource "azurerm_mssql_virtual_machine" "main" {
 
     data_settings {
       default_file_path = local.SqlStorageConfig.data_storage.default_file_path
-      luns              = (local.SqlStorageConfig.data_storage.count == "1") ? [1] : range(10, (local.SqlStorageConfig.data_storage.count + 1))
+      #luns              = (local.SqlStorageConfig.data_storage.count == "1") ? [1] : range(10, (local.SqlStorageConfig.data_storage.count + 1))
+      luns = [azurerm_virtual_machine_data_disk_attachment.data.lun]
     }
 
     log_settings {
       default_file_path = local.SqlStorageConfig.log_storage.default_file_path
-      luns              = (local.SqlStorageConfig.log_storage.count == "1") ? [10] : range(10, (local.SqlStorageConfig.log_storage.count + 1))
+      #luns              = (local.SqlStorageConfig.log_storage.count == "1") ? [10] : range(10, (local.SqlStorageConfig.log_storage.count + 1))
+      luns = [azurerm_virtual_machine_data_disk_attachment.log.lun]
     }
 
     temp_db_settings {
@@ -40,7 +50,6 @@ resource "azurerm_mssql_virtual_machine" "main" {
     }
 
   }
-
 
   dynamic "auto_backup" {
     for_each = var.enable_sql_auto_backup == false ? [] : [1]

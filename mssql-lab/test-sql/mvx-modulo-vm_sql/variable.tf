@@ -74,3 +74,8 @@ variable "enable_join_ad" {
   default = false
   type    = bool
 }
+
+variable "enable_public_ip" {
+  default = false
+  type    = bool
+}
