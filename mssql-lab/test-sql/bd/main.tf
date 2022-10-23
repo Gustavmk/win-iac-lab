@@ -74,3 +74,4 @@ module "vm_sqlserver" {
   tags = var.tags
 
 }
+

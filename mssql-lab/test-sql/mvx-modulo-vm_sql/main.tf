@@ -71,3 +71,38 @@ resource "azurerm_windows_virtual_machine" "main" {
   ]
 }
 
+resource "azurerm_managed_disk" "data" {
+  name                 = "DISK_${var.vm_name}_DATA_1"
+  location             = azurerm_resource_group.main.location
+  resource_group_name  = azurerm_resource_group.main.name
+  storage_account_type = "Standard_LRS"
+  create_option        = "Empty"
+  disk_size_gb         = "64"
+
+  tags = var.tags
+}
+
+resource "azurerm_managed_disk" "log" {
+  name                 = "DISK_${var.vm_name}_LOG_1"
+  location             = azurerm_resource_group.main.location
+  resource_group_name  = azurerm_resource_group.main.name
+  storage_account_type = "Standard_LRS"
+  create_option        = "Empty"
+  disk_size_gb         = "64"
+
+  tags = var.tags
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "data" {
+  managed_disk_id    = azurerm_managed_disk.data.id
+  virtual_machine_id = azurerm_virtual_machine.main.id
+  lun                = "1"
+  caching            = "ReadWrite"
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "log" {
+  managed_disk_id    = azurerm_managed_disk.log.id
+  virtual_machine_id = azurerm_virtual_machine.main.id
+  lun                = "2"
+  caching            = "ReadWrite"
+}
